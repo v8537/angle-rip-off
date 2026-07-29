@@ -1,7 +1,7 @@
 // ---- NY-day helpers -------------------------------------------------------
 
 const NY_TZ = 'America/New_York';
-const LAUNCH_DATE = '2026-07-29'; // day #1
+const LAUNCH_DATE = '2026-07-28';
 
 function nyDateParts() {
   const fmt = new Intl.DateTimeFormat('en-US', {
@@ -65,8 +65,10 @@ function mulberry32(seed) {
   };
 }
 
+const SEED_SALT = 'v2';
+
 function angleForDate(dateKey) {
-  const seedFn = hashString(`angle-rip-off-${dateKey}`);
+  const seedFn = hashString(`angle-rip-off-${SEED_SALT}-${dateKey}`);
   const rand = mulberry32(seedFn());
   const degrees = Math.floor(rand() * 361); // 0..360 inclusive
   const radians = degrees * Math.PI / 180;
