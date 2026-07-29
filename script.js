@@ -161,7 +161,7 @@ function renderHistory() {
     const warmth = warmthFor(g);
     li.classList.add(warmth.className);
     li.innerHTML = `
-      <span class="val">#${i + 1}: ${g.toFixed(2)} rad</span>
+      <span class="val">#${i + 1}: ${g.toFixed(4)} rad</span>
       <span class="dir">${warmth.emoji} ${warmth.label}${warmth.className === 'correct' ? '' : ` · ${directionArrow(g)}`}</span>
     `;
     historyList.appendChild(li);
