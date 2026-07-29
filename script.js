@@ -77,7 +77,7 @@ function angleForDate(dateKey) {
 
 // ---- Game state -------------------------------------------------------------
 
-const MAX_GUESSES = 4;
+const MAX_GUESSES = 1;
 // Correct means the guess rounds to the same 4-decimal-place radian value as the target,
 // i.e. within half the last digit's step (0.0001 / 2).
 const TOLERANCE = 0.00005;
@@ -132,7 +132,6 @@ let state = loadState();
 const dayNumberEl = document.getElementById('day-number');
 const guessInput = document.getElementById('guess-input');
 const guessBtn = document.getElementById('guess-btn');
-const guessesLeftEl = document.getElementById('guesses-left');
 const hintText = document.getElementById('hint-text');
 const historyList = document.getElementById('history-list');
 const resultPanel = document.getElementById('result-panel');
@@ -208,10 +207,6 @@ function renderResult() {
   shareText.textContent = buildShareText();
 }
 
-function renderGuessesLeft() {
-  guessesLeftEl.textContent = MAX_GUESSES - state.guesses.length;
-}
-
 function submitGuess() {
   if (state.done) return;
   const raw = guessInput.value.trim();
@@ -237,7 +232,6 @@ function submitGuess() {
 
 function render() {
   renderHistory();
-  renderGuessesLeft();
 
   if (state.done) {
     renderResult();
