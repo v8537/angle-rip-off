@@ -171,7 +171,7 @@ function renderHistory() {
 function buildShareText() {
   const grid = state.guesses.map((g) => warmthFor(g).emoji).join('');
   const attempts = state.won ? `${state.guesses.length}/${MAX_GUESSES}` : `X/${MAX_GUESSES}`;
-  return `angle rip-off #${dayNumber(todayKey)} — ${attempts}\n${grid}\nhttps://melodic-granita-b76663.netlify.app/`;
+  return `angle rip-off #${dayNumber(todayKey)} — ${attempts}\n${grid}\nhttps://v8537.github.io/angle-rip-off/`;
 }
 
 function renderResult() {
