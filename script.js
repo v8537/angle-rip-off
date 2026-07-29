@@ -75,14 +75,15 @@ function angleForDate(dateKey) {
 
 // ---- Game state -------------------------------------------------------------
 
-const MAX_GUESSES = 10;
+const MAX_GUESSES = 4;
 // Correct means the guess rounds to the same 4-decimal-place radian value as the target,
 // i.e. within half the last digit's step (0.0001 / 2).
 const TOLERANCE = 0.00005;
 
-// Ordered closest-first; first match wins. Thresholds are max |diff| in radians.
+// Post-game grading only -- ordered closest-first, first match wins. Thresholds are max
+// |diff| in radians. Never shown while guesses are still in progress.
 const WARMTH_TIERS = [
-  { max: TOLERANCE, label: 'correct', emoji: '✅', className: 'correct' },
+  { max: TOLERANCE, label: 'exact', emoji: '🎯', className: 'correct' },
   { max: 0.15, label: 'boiling', emoji: '🥵', className: 'boiling' },
   { max: 0.4, label: 'hot', emoji: '🔥', className: 'hot' },
   { max: 0.9, label: 'warm', emoji: '🌤️', className: 'warm' },
@@ -94,6 +95,16 @@ function warmthFor(guess) {
   return WARMTH_TIERS.find((t) => diff <= t.max);
 }
 
+// Score scales linearly from 100 (exact) to 0 (diff >= pi, i.e. no better than the worst
+// possible case on a 0..2*pi range).
+function scoreFor(diff) {
+  return Math.round(Math.max(0, 1 - diff / Math.PI) * 100);
+}
+
+function bestGuessDiff(guesses) {
+  return Math.min(...guesses.map((g) => Math.abs(g - targetRadians)));
+}
+
 const todayKey = todayKeyNY();
 const { radians: targetRadians } = angleForDate(todayKey);
 const storageKey = `angle-rip-off:${todayKey}`;
@@ -101,10 +112,10 @@ const storageKey = `angle-rip-off:${todayKey}`;
 function loadState() {
   try {
     const raw = localStorage.getItem(storageKey);
-    if (!raw) return { guesses: [], done: false, won: false };
+    if (!raw) return { guesses: [], done: false };
     return JSON.parse(raw);
   } catch {
-    return { guesses: [], done: false, won: false };
+    return { guesses: [], done: false };
   }
 }
 
@@ -151,12 +162,18 @@ function drawAngle() {
 
 drawAngle();
 
-function directionArrow(guess) {
-  if (Math.abs(guess - targetRadians) <= TOLERANCE) return '';
-  return guess < targetRadians ? '↑ higher' : '↓ lower';
+// While guesses remain, only the raw values entered are listed -- no distance, direction,
+// or grading. Grading only appears once all guesses are used (renderResult).
+function renderHistory() {
+  historyList.innerHTML = '';
+  state.guesses.forEach((g, i) => {
+    const li = document.createElement('li');
+    li.innerHTML = `<span class="val">#${i + 1}: ${g.toFixed(4)} rad</span>`;
+    historyList.appendChild(li);
+  });
 }
 
-function renderHistory() {
+function renderGradedHistory() {
   historyList.innerHTML = '';
   state.guesses.forEach((g, i) => {
     const li = document.createElement('li');
@@ -164,7 +181,7 @@ function renderHistory() {
     li.classList.add(warmth.className);
     li.innerHTML = `
       <span class="val">#${i + 1}: ${g.toFixed(4)} rad</span>
-      <span class="dir">${warmth.emoji} ${warmth.label}${warmth.className === 'correct' ? '' : ` · ${directionArrow(g)}`}</span>
+      <span class="dir">${warmth.emoji} ${warmth.label}</span>
     `;
     historyList.appendChild(li);
   });
@@ -172,8 +189,8 @@ function renderHistory() {
 
 function buildShareText() {
   const grid = state.guesses.map((g) => warmthFor(g).emoji).join('');
-  const attempts = state.won ? `${state.guesses.length}/${MAX_GUESSES}` : `X/${MAX_GUESSES}`;
-  return `angle rip-off #${dayNumber(todayKey)} — ${attempts}\n${grid}\nhttps://v8537.github.io/angle-rip-off/`;
+  const score = scoreFor(bestGuessDiff(state.guesses));
+  return `angle rip-off #${dayNumber(todayKey)} — ${score}/100\n${grid}\nhttps://v8537.github.io/angle-rip-off/`;
 }
 
 function renderResult() {
@@ -181,9 +198,10 @@ function renderResult() {
   guessInput.disabled = true;
   guessBtn.disabled = true;
 
-  resultTitle.textContent = state.won
-    ? `solved in ${state.guesses.length}/${MAX_GUESSES}`
-    : `out of guesses`;
+  renderGradedHistory();
+
+  const score = scoreFor(bestGuessDiff(state.guesses));
+  resultTitle.textContent = `score: ${score}/100`;
   resultDetail.textContent = `angle was ${targetRadians.toFixed(4)} radians.`;
   shareText.textContent = buildShareText();
 }
@@ -205,12 +223,7 @@ function submitGuess() {
   hintText.style.color = '';
 
   state.guesses.push(val);
-  const correct = Math.abs(val - targetRadians) <= TOLERANCE;
-
-  if (correct) {
-    state.won = true;
-    state.done = true;
-  } else if (state.guesses.length >= MAX_GUESSES) {
+  if (state.guesses.length >= MAX_GUESSES) {
     state.done = true;
   }
 
