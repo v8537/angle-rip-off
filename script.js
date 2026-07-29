@@ -85,11 +85,11 @@ const TOLERANCE = 0.00005;
 // Post-game grading only -- ordered closest-first, first match wins. Thresholds are max
 // |diff| in radians. Never shown while guesses are still in progress.
 const WARMTH_TIERS = [
-  { max: TOLERANCE, label: 'exact', emoji: '🎯', className: 'correct' },
-  { max: 0.15, label: 'boiling', emoji: '🥵', className: 'boiling' },
-  { max: 0.4, label: 'hot', emoji: '🔥', className: 'hot' },
-  { max: 0.9, label: 'warm', emoji: '🌤️', className: 'warm' },
-  { max: Infinity, label: 'cold', emoji: '🧊', className: 'cold' },
+  { max: TOLERANCE, label: 'exact', className: 'correct' },
+  { max: 0.15, label: 'boiling', className: 'boiling' },
+  { max: 0.4, label: 'hot', className: 'hot' },
+  { max: 0.9, label: 'warm', className: 'warm' },
+  { max: Infinity, label: 'cold', className: 'cold' },
 ];
 
 function warmthFor(guess) {
@@ -182,16 +182,16 @@ function renderGradedHistory() {
     li.classList.add(warmth.className);
     li.innerHTML = `
       <span class="val">#${i + 1}: ${g.toFixed(4)} rad</span>
-      <span class="dir">${warmth.emoji} ${warmth.label}</span>
+      <span class="dir">${warmth.label}</span>
     `;
     historyList.appendChild(li);
   });
 }
 
 function buildShareText() {
-  const grid = state.guesses.map((g) => warmthFor(g).emoji).join('');
+  const label = warmthFor(state.guesses[0]).label;
   const score = scoreFor(bestGuessDiff(state.guesses));
-  return `angle rip-off #${dayNumber(todayKey)} — ${score}/100\n${grid}\nhttps://v8537.github.io/angle-rip-off/`;
+  return `angle rip-off #${dayNumber(todayKey)} — ${score}/100 (${label})\nhttps://v8537.github.io/angle-rip-off/`;
 }
 
 function renderResult() {
