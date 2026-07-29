@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>angle rip-off</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>angle rip-off</h1>
+      <p class="subtitle">a random angle between 0 and 360 degrees was picked today. guess it in radians.</p>
+      <p class="daynum" id="day-number"></p>
+    </header>
+
+    <main>
+      <div class="angle-display">
+        <svg id="angle-svg" viewBox="-95 -95 190 190" width="190" height="190" role="img" aria-label="today's angle, measured counter-clockwise from the 3 o'clock position">
+          <line x1="0" y1="0" x2="80" y2="0" class="zero-ray" />
+          <path id="angle-arc" class="arc" />
+          <line id="angle-ray" x1="0" y1="0" x2="80" y2="0" class="ray" />
+          <circle id="angle-tip" cx="80" cy="0" r="4.5" class="tip" />
+          <circle cx="0" cy="0" r="2.5" class="origin" />
+        </svg>
+      </div>
+
+      <div class="guess-row">
+        <input
+          type="number"
+          id="guess-input"
+          step="0.01"
+          min="0"
+          max="6.29"
+          placeholder="e.g. 3.14"
+          autocomplete="off"
+          inputmode="decimal"
+        >
+        <button id="guess-btn">guess</button>
+      </div>
+      <p class="hint" id="hint-text">guesses remaining: <span id="guesses-left">10</span>. range: 0 to 2π (6.2832) radians.</p>
+
+      <ul class="history" id="history-list"></ul>
+
+      <div class="result" id="result-panel" hidden>
+        <h2 id="result-title"></h2>
+        <p id="result-detail"></p>
+        <div class="share-block">
+          <pre id="share-text"></pre>
+          <button id="copy-btn">copy results</button>
+          <span id="copy-confirm" class="copy-confirm" hidden>copied</span>
+        </div>
+        <p class="countdown">next angle in <span id="countdown"></span> (midnight, new york time)</p>
+      </div>
+    </main>
+
+    <footer>
+      <p>resets daily at midnight, america/new_york. same angle for everyone.</p>
+    </footer>
+  </div>
+
+<script src="script.js"></script>
+</body>
+</html>
