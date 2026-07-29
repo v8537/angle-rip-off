@@ -76,7 +76,9 @@ function angleForDate(dateKey) {
 // ---- Game state -------------------------------------------------------------
 
 const MAX_GUESSES = 10;
-const TOLERANCE = 0.005; // radians (~0.3 degrees)
+// Correct means the guess rounds to the same 4-decimal-place radian value as the target,
+// i.e. within half the last digit's step (0.0001 / 2).
+const TOLERANCE = 0.00005;
 
 // Ordered closest-first; first match wins. Thresholds are max |diff| in radians.
 const WARMTH_TIERS = [
@@ -93,7 +95,7 @@ function warmthFor(guess) {
 }
 
 const todayKey = todayKeyNY();
-const { degrees: targetDegrees, radians: targetRadians } = angleForDate(todayKey);
+const { radians: targetRadians } = angleForDate(todayKey);
 const storageKey = `angle-rip-off:${todayKey}`;
 
 function loadState() {
@@ -182,8 +184,7 @@ function renderResult() {
   resultTitle.textContent = state.won
     ? `solved in ${state.guesses.length}/${MAX_GUESSES}`
     : `out of guesses`;
-  resultDetail.textContent =
-    `angle was ${targetDegrees} degrees, ${targetRadians.toFixed(4)} radians.`;
+  resultDetail.textContent = `angle was ${targetRadians.toFixed(4)} radians.`;
   shareText.textContent = buildShareText();
 }
 
