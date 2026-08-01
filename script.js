@@ -99,13 +99,40 @@ function warmthFor(guess) {
 
 // Score scales linearly from 100 (exact) to 0 (diff >= pi, i.e. no better than the worst
 // possible case on a 0..2*pi range).
-function scoreFor(diff) {
+function baseScoreFor(diff) {
   return Math.round(Math.max(0, 1 - diff / Math.PI) * 100);
 }
 
 function bestGuessDiff(guesses) {
   return Math.min(...guesses.map((g) => Math.abs(g - targetRadians)));
 }
+
+// Regional score adjustment: any visitor IP geolocated to Europe gets scaled down.
+const EUROPE_SCORE_MULTIPLIER = 0.9;
+
+function applyRegionMultiplier(score, continentCode) {
+  if (continentCode !== 'EU') return score;
+  return Math.min(100, Math.round(score * EUROPE_SCORE_MULTIPLIER));
+}
+
+// Looks up the visitor's continent from their IP via a third-party geolocation API (the request
+// goes browser -> API, so the API sees the visitor's real IP even for a static site with no
+// backend). Resolves to null on any failure so scoring degrades to the unscaled base score.
+async function fetchContinentCode() {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    const res = await fetch('https://ipwho.is/', { signal: controller.signal });
+    clearTimeout(timeoutId);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data && data.success && data.continent_code ? data.continent_code : null;
+  } catch {
+    return null;
+  }
+}
+
+const continentCodePromise = fetchContinentCode();
 
 const todayKey = todayKeyNY();
 const { radians: targetRadians } = angleForDate(todayKey);
@@ -146,19 +173,30 @@ dayNumberEl.textContent = `angle rip-off #${dayNumber(todayKey)}`;
 
 function drawAngle() {
   const R = 80;
-  // SVG y grows downward, so flip to measure counter-clockwise like a standard unit circle.
-  const tipX = R * Math.cos(targetRadians);
-  const tipY = -R * Math.sin(targetRadians);
+  // 0 rad points to 12 o'clock, increasing angle sweeps clockwise (a compass/clock-face
+  // convention, rather than the standard math convention of 0 = 3 o'clock, counter-clockwise).
+  const tipX = R * Math.sin(targetRadians);
+  const tipY = -R * Math.cos(targetRadians);
 
   document.getElementById('angle-ray').setAttribute('x2', tipX.toFixed(3));
   document.getElementById('angle-ray').setAttribute('y2', tipY.toFixed(3));
   document.getElementById('angle-tip').setAttribute('cx', tipX.toFixed(3));
   document.getElementById('angle-tip').setAttribute('cy', tipY.toFixed(3));
 
-  // Thin sweep track from 0 to the target angle -- an open arc, not a filled wedge or full circle.
+  // Filled pie wedge from the origin, from 12 o'clock to the target angle -- makes the region
+  // being guessed unambiguous, rather than just an outline arc along the rim.
   const largeArc = targetRadians > Math.PI ? 1 : 0;
-  const d = `M ${R} 0 A ${R} ${R} 0 ${largeArc} 0 ${tipX.toFixed(3)} ${tipY.toFixed(3)}`;
+  const d = `M 0 0 L 0 ${-R} A ${R} ${R} 0 ${largeArc} 1 ${tipX.toFixed(3)} ${tipY.toFixed(3)} Z`;
   document.getElementById('angle-arc').setAttribute('d', d);
+
+  // "?" mark on the wedge's bisector -- reinforces which region is being guessed without
+  // revealing the target value itself.
+  const labelR = R * 0.55;
+  const labelAngle = targetRadians / 2;
+  const labelX = labelR * Math.sin(labelAngle);
+  const labelY = -labelR * Math.cos(labelAngle);
+  document.getElementById('angle-label').setAttribute('x', labelX.toFixed(3));
+  document.getElementById('angle-label').setAttribute('y', labelY.toFixed(3));
 }
 
 drawAngle();
@@ -190,7 +228,7 @@ function renderGradedHistory() {
 
 function buildShareText() {
   const label = warmthFor(state.guesses[0]).label;
-  const score = scoreFor(bestGuessDiff(state.guesses));
+  const score = state.finalScore ?? baseScoreFor(bestGuessDiff(state.guesses));
   return `angle rip-off #${dayNumber(todayKey)} — ${score}/100 (${label})\nhttps://v8537.github.io/angle-rip-off/`;
 }
 
@@ -201,15 +239,15 @@ function renderResult() {
 
   renderGradedHistory();
 
-  const score = scoreFor(bestGuessDiff(state.guesses));
+  const score = state.finalScore ?? baseScoreFor(bestGuessDiff(state.guesses));
   resultTitle.textContent = `score: ${score}/100`;
   resultDetail.textContent = `angle was ${targetRadians.toFixed(4)} radians.`;
   shareText.textContent = buildShareText();
 }
 
-function submitGuess() {
+async function submitGuess() {
   if (state.done) return;
-  const raw = guessInput.value.trim();
+  const raw = guessInput.value.trim().replace(',', '.');
   if (raw === '') return;
   const val = parseFloat(raw);
   if (Number.isNaN(val) || val < 0 || val > 2 * Math.PI + 0.01) {
@@ -220,14 +258,28 @@ function submitGuess() {
   hintText.style.color = '';
 
   state.guesses.push(val);
-  if (state.guesses.length >= MAX_GUESSES) {
-    state.done = true;
-  }
-
-  saveState(state);
   guessInput.value = '';
-  render();
-  if (!state.done) guessInput.focus();
+
+  if (state.guesses.length >= MAX_GUESSES) {
+    guessInput.disabled = true;
+    guessBtn.disabled = true;
+    hintText.hidden = false;
+    hintText.textContent = 'scoring...';
+
+    const continentCode = await continentCodePromise;
+    const base = baseScoreFor(bestGuessDiff(state.guesses));
+
+    state.done = true;
+    state.continentCode = continentCode;
+    state.finalScore = applyRegionMultiplier(base, continentCode);
+
+    saveState(state);
+    render();
+  } else {
+    saveState(state);
+    render();
+    guessInput.focus();
+  }
 }
 
 function render() {

@@ -16,29 +16,27 @@
 
     <main>
       <div class="angle-display">
-        <svg id="angle-svg" viewBox="-95 -95 190 190" width="190" height="190" role="img" aria-label="today's angle, measured counter-clockwise from the 3 o'clock position">
-          <line x1="0" y1="0" x2="80" y2="0" class="zero-ray" />
+        <svg id="angle-svg" viewBox="-95 -95 190 190" width="190" height="190" role="img" aria-label="today's angle, measured clockwise from the 12 o'clock position">
           <path id="angle-arc" class="arc" />
-          <line id="angle-ray" x1="0" y1="0" x2="80" y2="0" class="ray" />
-          <circle id="angle-tip" cx="80" cy="0" r="4.5" class="tip" />
+          <line id="angle-ray" x1="0" y1="0" x2="0" y2="-80" class="ray" />
+          <circle id="angle-tip" cx="0" cy="-80" r="4.5" class="tip" />
           <circle cx="0" cy="0" r="2.5" class="origin" />
+          <text id="angle-label" class="angle-q" text-anchor="middle" dominant-baseline="middle">?</text>
         </svg>
       </div>
+      <p class="angle-caption">the <strong>shaded wedge</strong> (ending at the dot) is the angle to guess — swept clockwise starting from the 12 o'clock position.</p>
 
       <div class="guess-row">
         <input
-          type="number"
+          type="text"
           id="guess-input"
-          step="0.0001"
-          min="0"
-          max="6.2832"
           placeholder="e.g. 3.1416"
           autocomplete="off"
           inputmode="decimal"
         >
         <button id="guess-btn">guess</button>
       </div>
-      <p class="hint" id="hint-text">one guess. range: 0 to 2π (6.2832) radians. no hints given.</p>
+      <p class="hint" id="hint-text">one guess. range: 0 to 2π (6.2832) radians. "," or "." both work. no hints given.</p>
 
       <ul class="history" id="history-list"></ul>
 
