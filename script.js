@@ -134,6 +134,12 @@ async function fetchContinentCode() {
 
 const continentCodePromise = fetchContinentCode();
 
+// Cloudflare Quick Tunnel to the backend on the home server -- no account/domain needed, but the
+// hostname isn't guaranteed stable: it only changes if the tunnel process itself restarts (see
+// launchd/com.gamebackend.tunnel.plist), which should be rare, but if this ever stops working,
+// check the tunnel's current URL on the server first.
+const BACKEND_URL = 'https://sorry-bear-tops-desire.trycloudflare.com';
+
 const todayKey = todayKeyNY();
 const { radians: targetRadians } = angleForDate(todayKey);
 const storageKey = `angle-rip-off:${todayKey}`;
@@ -168,6 +174,8 @@ const shareText = document.getElementById('share-text');
 const copyBtn = document.getElementById('copy-btn');
 const copyConfirm = document.getElementById('copy-confirm');
 const countdownEl = document.getElementById('countdown');
+const leaderboardList = document.getElementById('leaderboard-list');
+const leaderboardStatus = document.getElementById('leaderboard-status');
 
 dayNumberEl.textContent = `angle rip-off #${dayNumber(todayKey)}`;
 
@@ -275,10 +283,71 @@ async function submitGuess() {
 
     saveState(state);
     render();
+    submitToLeaderboard();
   } else {
     saveState(state);
     render();
     guessInput.focus();
+  }
+}
+
+// ---- Leaderboard ----------------------------------------------------------------------------
+
+async function submitToLeaderboard() {
+  if (state.leaderboardSubmitted) return;
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/angle/submit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        day: todayKey,
+        rawScore: baseScoreFor(bestGuessDiff(state.guesses)),
+        finalScore: state.finalScore,
+      }),
+    });
+    if (res.ok) {
+      state.leaderboardSubmitted = true;
+      saveState(state);
+    }
+  } catch {
+    // Backend unreachable -- the game result itself is unaffected, just skip the leaderboard.
+  }
+  fetchLeaderboard();
+}
+
+function renderLeaderboard(entries) {
+  leaderboardList.innerHTML = '';
+  if (entries.length === 0) {
+    leaderboardStatus.hidden = false;
+    leaderboardStatus.textContent = 'no scores yet today -- be the first.';
+    return;
+  }
+  leaderboardStatus.hidden = true;
+  entries.forEach((entry, i) => {
+    const li = document.createElement('li');
+    const rank = i + 1;
+    if (rank <= 3) li.classList.add(`rank-${rank}`);
+    li.innerHTML = `
+      <span class="rank">${rank}</span>
+      <span class="score-block">
+        <span class="final-score">${entry.finalScore}/100</span>
+        <span class="raw-score">raw ${entry.rawScore}</span>
+      </span>
+      <span class="location">${entry.location}</span>
+    `;
+    leaderboardList.appendChild(li);
+  });
+}
+
+async function fetchLeaderboard() {
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/angle/leaderboard?day=${todayKey}`, { cache: 'no-store' });
+    if (!res.ok) throw new Error('fetch failed');
+    const data = await res.json();
+    renderLeaderboard(data.entries || []);
+  } catch {
+    leaderboardStatus.hidden = false;
+    leaderboardStatus.textContent = 'leaderboard unavailable right now.';
   }
 }
 
@@ -330,3 +399,10 @@ copyBtn.addEventListener('click', async () => {
 render();
 tickCountdown();
 setInterval(tickCountdown, 1000);
+
+if (state.done && !state.leaderboardSubmitted) {
+  submitToLeaderboard();
+} else {
+  fetchLeaderboard();
+}
+setInterval(fetchLeaderboard, 20000);

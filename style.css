@@ -255,6 +255,96 @@ button:not(:disabled):hover {
   font-size: 0.85rem;
 }
 
+.leaderboard-section {
+  margin-top: 32px;
+}
+
+.leaderboard-title {
+  font-size: 1rem;
+  font-weight: 700;
+  text-align: center;
+  margin: 0 0 12px;
+  letter-spacing: 0.01em;
+}
+
+.leaderboard {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.leaderboard li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+}
+
+.leaderboard .rank {
+  flex-shrink: 0;
+  width: 22px;
+  text-align: center;
+  font-weight: 800;
+  font-size: 1rem;
+  color: var(--muted);
+}
+
+.leaderboard .score-block {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.leaderboard .final-score {
+  font-weight: 700;
+  font-size: 1.05rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.leaderboard .raw-score {
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.leaderboard .location {
+  margin-left: auto;
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-align: right;
+}
+
+.leaderboard li.rank-1 {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--panel));
+}
+
+.leaderboard li.rank-1 .rank,
+.leaderboard li.rank-1 .final-score {
+  color: var(--accent);
+}
+
+.leaderboard li.rank-2 {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+}
+
+.leaderboard li.rank-3 {
+  border-color: color-mix(in srgb, var(--accent) 22%, var(--border));
+}
+
+.leaderboard-status {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin: 4px 0 0;
+}
+
 footer {
   text-align: center;
   color: var(--muted);
