@@ -313,6 +313,12 @@ button:not(:disabled):hover {
   font-variant-numeric: tabular-nums;
 }
 
+.leaderboard .guess {
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
 .leaderboard .location {
   margin-left: auto;
   font-size: 0.85rem;

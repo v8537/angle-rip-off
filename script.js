@@ -107,33 +107,6 @@ function bestGuessDiff(guesses) {
   return Math.min(...guesses.map((g) => Math.abs(g - targetRadians)));
 }
 
-// Regional score adjustment: any visitor IP geolocated to Europe gets scaled down.
-const EUROPE_SCORE_MULTIPLIER = 0.9;
-
-function applyRegionMultiplier(score, continentCode) {
-  if (continentCode !== 'EU') return score;
-  return Math.min(100, Math.round(score * EUROPE_SCORE_MULTIPLIER));
-}
-
-// Looks up the visitor's continent from their IP via a third-party geolocation API (the request
-// goes browser -> API, so the API sees the visitor's real IP even for a static site with no
-// backend). Resolves to null on any failure so scoring degrades to the unscaled base score.
-async function fetchContinentCode() {
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000);
-    const res = await fetch('https://ipwho.is/', { signal: controller.signal });
-    clearTimeout(timeoutId);
-    if (!res.ok) return null;
-    const data = await res.json();
-    return data && data.success && data.continent_code ? data.continent_code : null;
-  } catch {
-    return null;
-  }
-}
-
-const continentCodePromise = fetchContinentCode();
-
 // Cloudflare Quick Tunnel to the backend on the home server -- no account/domain needed, but the
 // hostname isn't guaranteed stable: it only changes if the tunnel process itself restarts (see
 // launchd/com.gamebackend.tunnel.plist), which should be rare, but if this ever stops working,
@@ -274,12 +247,10 @@ async function submitGuess() {
     hintText.hidden = false;
     hintText.textContent = 'scoring...';
 
-    const continentCode = await continentCodePromise;
     const base = baseScoreFor(bestGuessDiff(state.guesses));
 
     state.done = true;
-    state.continentCode = continentCode;
-    state.finalScore = applyRegionMultiplier(base, continentCode);
+    state.finalScore = base;
 
     saveState(state);
     render();
@@ -303,6 +274,7 @@ async function submitToLeaderboard() {
         day: todayKey,
         rawScore: baseScoreFor(bestGuessDiff(state.guesses)),
         finalScore: state.finalScore,
+        guess: state.guesses[0],
       }),
     });
     if (res.ok) {
@@ -333,6 +305,7 @@ function renderLeaderboard(entries) {
         <span class="final-score">${entry.finalScore}/100</span>
         <span class="raw-score">raw ${entry.rawScore}</span>
       </span>
+      <span class="guess">${entry.guess != null ? entry.guess.toFixed(4) : '—'}</span>
       <span class="location">${entry.location}</span>
     `;
     leaderboardList.appendChild(li);
