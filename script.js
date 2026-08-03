@@ -86,10 +86,10 @@ const TOLERANCE = 0.00005;
 // |diff| in radians. Never shown while guesses are still in progress.
 const WARMTH_TIERS = [
   { max: TOLERANCE, label: 'exact', emoji: '🎯', className: 'correct' },
-  { max: 0.15, label: 'boiling', emoji: '🥵', className: 'boiling' },
-  { max: 0.4, label: 'hot', emoji: '🔥', className: 'hot' },
-  { max: 0.9, label: 'warm', emoji: '🌤️', className: 'warm' },
-  { max: Infinity, label: 'cold', emoji: '🧊', className: 'cold' },
+  { max: 0.15, label: 'boiling', emoji: '🥶', className: 'boiling' },
+  { max: 0.4, label: 'hot', emoji: '☺️', className: 'hot' },
+  { max: 0.9, label: 'warm', emoji: '😔', className: 'warm' },
+  { max: Infinity, label: 'cold', emoji: '🤒', className: 'cold' },
 ];
 
 function warmthFor(guess) {
