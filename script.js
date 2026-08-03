@@ -85,11 +85,11 @@ const TOLERANCE = 0.00005;
 // Post-game grading only -- ordered closest-first, first match wins. Thresholds are max
 // |diff| in radians. Never shown while guesses are still in progress.
 const WARMTH_TIERS = [
-  { max: TOLERANCE, label: 'exact', className: 'correct' },
-  { max: 0.15, label: 'boiling', className: 'boiling' },
-  { max: 0.4, label: 'hot', className: 'hot' },
-  { max: 0.9, label: 'warm', className: 'warm' },
-  { max: Infinity, label: 'cold', className: 'cold' },
+  { max: TOLERANCE, label: 'exact', emoji: '🎯', className: 'correct' },
+  { max: 0.15, label: 'boiling', emoji: '🥵', className: 'boiling' },
+  { max: 0.4, label: 'hot', emoji: '🔥', className: 'hot' },
+  { max: 0.9, label: 'warm', emoji: '🌤️', className: 'warm' },
+  { max: Infinity, label: 'cold', emoji: '🧊', className: 'cold' },
 ];
 
 function warmthFor(guess) {
@@ -98,9 +98,12 @@ function warmthFor(guess) {
 }
 
 // Score scales linearly from 100 (exact) to 0 (diff >= pi, i.e. no better than the worst
-// possible case on a 0..2*pi range).
+// possible case on a 0..2*pi range). Kept to 4 decimal places -- the same precision as the
+// radian guesses themselves -- so close scores (eg several people all near 99/100) can still
+// be told apart on the leaderboard instead of collapsing to the same rounded integer.
 function baseScoreFor(diff) {
-  return Math.round(Math.max(0, 1 - diff / Math.PI) * 100);
+  const raw = Math.max(0, 1 - diff / Math.PI) * 100;
+  return Math.round(raw * 10000) / 10000;
 }
 
 function bestGuessDiff(guesses) {
@@ -201,16 +204,17 @@ function renderGradedHistory() {
     li.classList.add(warmth.className);
     li.innerHTML = `
       <span class="val">#${i + 1}: ${g.toFixed(4)} rad</span>
-      <span class="dir">${warmth.label}</span>
+      <span class="dir">${warmth.emoji} ${warmth.label}</span>
     `;
     historyList.appendChild(li);
   });
 }
 
 function buildShareText() {
-  const label = warmthFor(state.guesses[0]).label;
+  const emoji = warmthFor(state.guesses[0]).emoji;
   const score = state.finalScore ?? baseScoreFor(bestGuessDiff(state.guesses));
-  return `angle rip-off #${dayNumber(todayKey)} — ${score}/100 (${label})\nhttps://v8537.github.io/angle-rip-off/`;
+  const diff = bestGuessDiff(state.guesses);
+  return `Angle Rip-off #${dayNumber(todayKey)}\n\n${score.toFixed(4)}/100 ${emoji}\n${diff.toFixed(4)} radians away\n\nhttps://v8537.github.io/angle-rip-off/`;
 }
 
 function renderResult() {
@@ -221,7 +225,7 @@ function renderResult() {
   renderGradedHistory();
 
   const score = state.finalScore ?? baseScoreFor(bestGuessDiff(state.guesses));
-  resultTitle.textContent = `score: ${score}/100`;
+  resultTitle.textContent = `score: ${score.toFixed(4)}/100`;
   resultDetail.textContent = `angle was ${targetRadians.toFixed(4)} radians.`;
   shareText.textContent = buildShareText();
 }
@@ -302,8 +306,8 @@ function renderLeaderboard(entries) {
     li.innerHTML = `
       <span class="rank">${rank}</span>
       <span class="score-block">
-        <span class="final-score">${entry.finalScore}/100</span>
-        <span class="raw-score">raw ${entry.rawScore}</span>
+        <span class="final-score">${Number(entry.finalScore).toFixed(4)}/100</span>
+        <span class="raw-score">raw ${Number(entry.rawScore).toFixed(4)}</span>
       </span>
       <span class="guess">${entry.guess != null ? entry.guess.toFixed(4) : '—'}</span>
       <span class="location">${entry.location}</span>
